@@ -94,7 +94,7 @@ sub pickAccount( ) {
 
 	# If there is only one account, return it
 	if(scalar(@accounts) == 1){
-		return $accounts[0];
+		return 0;
 	}
 
 	# Otherwise we need to pick an account
@@ -108,7 +108,7 @@ sub pickAccount( ) {
 		chomp($selection);
 	}
 
-	return $accounts[$selection];
+	return $selection;
 }
 
 sub removeAccount( ) {
@@ -117,15 +117,11 @@ sub removeAccount( ) {
 
 # Have the user select an account and send an email
 sub sendEmail( ) {
-	%account = pickAccount();
-	$senderAddress = $account{'address'};
-	$senderPassword = $account{'password'};
+	my @accounts = getAccounts();
+	my $accountSelection = pickAccount();
 
-	print "\nDebugInfo\n";
-	print $senderAddress;
-	print ': ';
-	print $senderPassword;
-	print "\n";
+	$senderAddress = $accounts[$accountSelection]{'address'};
+	$senderPassword = $accounts[$accountSelection]{'password'};
 
 	print "Send to: ";
 	$recipient = <STDIN>;
@@ -136,6 +132,7 @@ sub sendEmail( ) {
 	chomp($subject);
 
 	#### Compose the email
+	system "rm -f email.txt";
 	system "vim email.txt";
 	open(my $data, '<', 'email.txt') or die "Cancelling...\n";
 	
@@ -146,7 +143,7 @@ sub sendEmail( ) {
 	}
 
 	# Delete the email file
-	unlink $data;
+	system "rm -f email.txt";
 
 	#### Send the email
 	print("Sending email to ${receiverAddress}... ");
