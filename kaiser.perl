@@ -6,15 +6,63 @@ use File::Slurp;
 use Email::Send;
 use Email::Send::Gmail;
 use Email::Simple::Creator;
+use Term::Bash::Completion::Generator;
+use List::MoreUtils qw(firstidx);
 
-my $PATH = '/usr/local/share/etc/kaiser-gmail';
+my $HOME = $ENV{"HOME"};
+my $PATH = "${HOME}/.kaiser";
+
+# Bash Autocompletion
+#generate_bash_completion_function('kaiser', ['send', 'list-accounts', 'add-account', 'remove-account']);
+
+# Arguments: string of message to show, then all the allowed responses
+# returns index of chosen response in the response array
+sub getSelection {
+	if(scalar(@_) < 2) {
+		die "Invalid arguments in subroutine getSelection()\n";
+	}
+
+	my ($message, @allowedInput) = @_;
+
+	my $input = '';
+	my $index = -1;
+
+	while( $index < 0 ) {
+		print "${message}\n";
+		$input = <STDIN>;
+		chomp($input);
+
+		for(my $i = 0; $i < scalar(@allowedInput); $i++) {
+			my $allowed = $allowedInput[$i];
+
+			if($allowedInput[$i] eq $input) {
+				return $input;
+			}
+		}
+	}
+
+	return -1;
+}
+
+# Prompts for an email address
+sub getEmail() {
+	my $input = <STDIN>;
+	chomp($input);
+
+	while($input !~ /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/) {
+		print "Invalid email address\nTry again: ";
+		$input = <STDIN>;
+		chomp($input);
+	}
+
+	return $input;
+}
 
 sub addAccount( ) {
 	print("Adding a Gmail Account\n");
 
 	print("Email address: ");
-	my $address = <STDIN>;
-	chomp($address);
+	my $address = getEmail();
 
 	print("Password: ");
 	my $password = <STDIN>;
@@ -33,7 +81,7 @@ sub addAccount( ) {
 }
 
 # Return array of hashes with 'address' and 'password'
-sub getAccounts() {
+sub getAccounts( ) {
 	opendir(my $accountDir, "${PATH}/accounts/") or die "No accounts. Add one with 'add-account'\n";
 	my @accountFiles = readdir($accountDir);
 
@@ -65,7 +113,7 @@ sub getAccounts() {
 }
 
 # Argument is whether or not to also print numbers with accounts
-sub listAccounts() {
+sub listAccounts( ) {
 	my $showNumbers = 1;
 
 	if(scalar(@_) > 0) {
@@ -119,8 +167,8 @@ sub removeAccount( ) {
 
 }
 
-# Have the user select an account and send an email
-sub sendEmail( ) {
+# Have the user select an account and compose an email
+sub composeEmail( ) {
 	my @accounts = getAccounts();
 	my $accountSelection = pickAccount();
 
@@ -128,17 +176,15 @@ sub sendEmail( ) {
 	my $senderPassword = $accounts[$accountSelection]{'password'};
 
 	print "Send to: ";
-	my $recipient = <STDIN>;
-	chomp($recipient);
+	my $recipient = getEmail();
 
 	print "Subject: ";
 	my $subject = <STDIN>;
 	chomp($subject);
 
 	#### Compose the email
-	system "rm -f email.txt";
-	system "vim email.txt";
-	open(my $data, '<', 'email.txt') or die "Cancelling...\n";
+	system "vim ${recipient}.txt";
+	open(my $data, '<', "${recipient}.txt") or die "Cancelling...\n";
 	
 	# Read email text into a string
 	my $emailBody = "";
@@ -146,17 +192,47 @@ sub sendEmail( ) {
 	       $emailBody = "${emailBody}\n${line}";
 	}
 
-	# Delete the email file
-	system "rm -f email.txt";
 
-	#### Send the email
-	print("Sending email to ${recipient}... ");
+	### Ask what to do
+	print "\n";
+	my $action = getSelection("[s]end, [d]iscard, or s[a]ve?", "s", "d", "a");
+	
+	if($action eq 's') {
+		# Send
+		sendEmail($senderAddress, $senderPassword, $recipient, $subject, $emailBody);
+
+		# Delete the email file after successful send
+		system "rm -f ${recipient}.txt";
+	} elsif ($action eq 'd') {
+		# Discard
+		system "rm -f ${recipient}.txt";
+	} elsif ($action eq 'a') {
+		# Save, nothing to do
+		exit;
+	}
+
+	exit;
+}
+
+# Arguments: senderAddress, senderPassword, recierverAddress, subject, body
+sub sendEmail {
+	if(scalar(@_) != 5) {
+		die "Invalid arguments in subroutine sendEmail\n";
+	}
+
+	my $senderAddress = $_[0];
+	my $senderPassword = $_[1];
+	my $receiverAddress= $_[2];
+	my $emailSubject = $_[3];
+	my $emailBody = $_[4];
+
+	print("Sending email to ${receiverAddress}... ");
 
 	my $email = Email::Simple->create(
 		header => [
 			From => "${senderAddress}",
-			To => "${recipient}",
-			Subject => "${subject}",
+			To => "${receiverAddress}",
+			Subject => "${emailSubject}",
 		],
 		body => "${emailBody}",);
 
@@ -166,29 +242,26 @@ sub sendEmail( ) {
 				   password => "${senderPassword}", ]
 		});
 
-	$sender->send($email) or die "\nError sending email to ${recipient}\n";
-
-	# Delete the email file after successful send
-	system "rm -f email.txt";
-
+	$sender->send($email) or die "\nError sending email to ${receiverAddress}\n";
 	print("Sent\n");
-	exit;
 }
 
 # Find out which command is wanted
 if( scalar @ARGV != 1 ) {
 	# Wrong number of arguments
-	print "Usage:\nkaiser <send | list-accounts | add-account | remove-account>\n";
+	print "Usage:\nkaiser <compose | list-accounts | add-account | remove-account>\n";
 	exit;
 }
 
-if($ARGV[0] eq 'send') {
-	sendEmail( );
+if($ARGV[0] eq 'compose') {
+	composeEmail( );
 } elsif ($ARGV[0] eq 'add-account') {
 	addAccount( );
 } elsif ($ARGV[0] eq 'remove-account') {
 	removeAccount( );
 } elsif ($ARGV[0] eq 'list-accounts') {
 	listAccounts();
+} else {
+	print "Usage:\nkaiser <compose | list-accounts | add-account | remove-account>\n";
 }
 

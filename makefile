@@ -1,5 +1,5 @@
 install:
-	cpan install Crypt::Lite File::Slurp Email::Send Email::Send::Gmail Email::Simple::Creator
+	cpan install Module::Build::Compat Crypt::Lite File::Slurp Email::Send Email::Send::Gmail Email::Simple::Creator List::MoreUtils Term::Bash::Completion::Generator
 	mkdir /usr/local/etc/kaiser-gmail
 	cp kaiser.perl /usr/local/etc/kaiser-gmail
 	chmod +x /usr/local/etc/kaiser-gmail/kaiser.perl 
