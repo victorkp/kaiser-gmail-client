@@ -49,7 +49,7 @@ sub getEmail() {
 	my $input = <STDIN>;
 	chomp($input);
 
-	while($input !~ /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/) {
+	while($input !~ /^(\w|\-|\_|\.)+\@((\w|\-|\_)+\.)+[a-zA-Z]{2,}$/) {
 		print "Invalid email address\nTry again: ";
 		$input = <STDIN>;
 		chomp($input);
