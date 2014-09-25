@@ -8,3 +8,10 @@ install:
 uninstall:
 	rm /usr/local/bin/kaiser
 	rm -r /usr/local/etc/kaiser-gmail
+
+reinstall:
+	rm /usr/local/etc/kaiser-gmail/kaiser.perl
+	cp kaiser.perl /usr/local/etc/kaiser-gmail
+	chmod +x /usr/local/etc/kaiser-gmail/kaiser.perl 
+	rm /usr/local/bin/kaiser
+	ln -s /usr/local/etc/kaiser-gmail/kaiser.perl /usr/local/bin/kaiser

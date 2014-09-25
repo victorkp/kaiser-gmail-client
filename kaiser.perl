@@ -1,11 +1,13 @@
 #!/usr/bin/perl
-# use strict;
-# use warnings;
+use strict;
+use warnings;
 use Crypt::Lite;
 use File::Slurp;
 use Email::Send;
 use Email::Send::Gmail;
 use Email::Simple::Creator;
+
+my $PATH = '/usr/local/share/etc/kaiser-gmail';
 
 sub addAccount( ) {
 	print("Adding a Gmail Account\n");
@@ -19,20 +21,20 @@ sub addAccount( ) {
 	chomp($password);
 
 	# Make the accounts folder if it does not already exist
-	system "mkdir -p accounts";
+	system "mkdir -p ${PATH}/accounts";
 
 	# Encrypt and write to file 
-	$crypt = Crypt::Lite->new(debug=>0);
+	my $crypt = Crypt::Lite->new(debug=>0);
 	$password = $crypt->encrypt($password, $address);
 
-	system "echo \"${password}\" >> accounts/${address}";
+	system "echo \"${password}\" >> ${PATH}/accounts/${address}";
 
 	exit;
 }
 
 # Return array of hashes with 'address' and 'password'
 sub getAccounts() {
-	opendir($accountDir, 'accounts/') or die "No accounts. Add one with 'add-account'\n";
+	opendir(my $accountDir, "${PATH}/accounts/") or die "No accounts. Add one with 'add-account'\n";
 	my @accountFiles = readdir($accountDir);
 
 	my @accounts = ();
@@ -42,17 +44,19 @@ sub getAccounts() {
 			next;
 		}
 
-		$address = $_;
+		my $address = $_;
 
-		open(my $file, '<', "accounts/${address}") or die "Could not open account file\n";
+		open(my $file, '<', "$PATH/accounts/${address}") or die "Could not open account file\n";
 
 		my $password = read_file($file);
 
 		# Decrypt the password
-		$crypt = Crypt::Lite->new(debug=>0);
+		my $crypt = Crypt::Lite->new(debug=>0);
 		$password = $crypt->decrypt($password, $address);
 
 		push @accounts, { address=>$address, password=>$password };
+
+		close($file);
 	}
 
 	closedir($accountDir);
@@ -62,7 +66,7 @@ sub getAccounts() {
 
 # Argument is whether or not to also print numbers with accounts
 sub listAccounts() {
-	$showNumbers = 1;
+	my $showNumbers = 1;
 
 	if(scalar(@_) > 0) {
 		$showNumbers = $_[0];
@@ -70,9 +74,9 @@ sub listAccounts() {
 
 	my @accounts = getAccounts();
 
-	for($i = 0; $i < scalar(@accounts); $i++) {
-		$address = $accounts[i]{'address'};
-		$password = $account[i]{'password'};
+	for(my $i = 0; $i < scalar(@accounts); $i++) {
+		my $address = $accounts[$i]{'address'};
+		my $password = $accounts[$i]{'password'};
 
 		if($showNumbers) {
 			print "${i}: ${address}\n";
@@ -100,7 +104,7 @@ sub pickAccount( ) {
 	# Otherwise we need to pick an account
 	listAccounts();
 
-	$selection = -1;
+	my $selection = -1;
 	while($selection < 0 || $selection >= scalar(@accounts)) {
 		# While the selection is invalid
 		print "Enter number of account: ";
@@ -120,15 +124,15 @@ sub sendEmail( ) {
 	my @accounts = getAccounts();
 	my $accountSelection = pickAccount();
 
-	$senderAddress = $accounts[$accountSelection]{'address'};
-	$senderPassword = $accounts[$accountSelection]{'password'};
+	my $senderAddress = $accounts[$accountSelection]{'address'};
+	my $senderPassword = $accounts[$accountSelection]{'password'};
 
 	print "Send to: ";
-	$recipient = <STDIN>;
+	my $recipient = <STDIN>;
 	chomp($recipient);
 
 	print "Subject: ";
-	$subject = <STDIN>;
+	my $subject = <STDIN>;
 	chomp($subject);
 
 	#### Compose the email
@@ -146,7 +150,7 @@ sub sendEmail( ) {
 	system "rm -f email.txt";
 
 	#### Send the email
-	print("Sending email to ${receiverAddress}... ");
+	print("Sending email to ${recipient}... ");
 
 	my $email = Email::Simple->create(
 		header => [
@@ -164,6 +168,9 @@ sub sendEmail( ) {
 
 	$sender->send($email) or die "\nError sending email to ${recipient}\n";
 
+	# Delete the email file after successful send
+	system "rm -f email.txt";
+
 	print("Sent\n");
 	exit;
 }
@@ -171,7 +178,7 @@ sub sendEmail( ) {
 # Find out which command is wanted
 if( scalar @ARGV != 1 ) {
 	# Wrong number of arguments
-	print "Valid commands: send list-accounts add-account remove-account\n";
+	print "Usage:\nkaiser <send | list-accounts | add-account | remove-account>\n";
 	exit;
 }
 
@@ -184,55 +191,4 @@ if($ARGV[0] eq 'send') {
 } elsif ($ARGV[0] eq 'list-accounts') {
 	listAccounts();
 }
-
-# print("Email address to send from: ");
-# my $senderAddress = <STDIN>;
-# chomp($senderAddress);
-# 
-# print("\nPassword: ");
-# my $senderPassword = <STDIN>;
-# chomp($password);
-# 
-# print("\nEmail address to send to: ");
-# my $receiverAddress = <STDIN>;
-# chomp($receiverAddress);
-# 
-# print("\nSubject: ");
-# my $subject = <STDIN>;
-# chomp($subject);
-# 
-# system "vim email.txt";
-# 
-# open(my $data, '<', 'email.txt') or die "Cancelling...\n";
-# 
-# # Read email text into a string
-# 
-# my $emailBody = "";
-# 
-# while (my $line = <$data>) {
-# 	$emailBody = "${emailBody}\n${line}";
-# }
-# 
-# # Delete the email file
-# unlink $data;
-# 
-# print("Sending email to ${receiverAddress}... ");
-# 
-# my $email = Email::Simple->create(
-# 	header => [
-# 		From => "${senderAddress}",
-# 		To => "${receiverAddress}",
-# 		Subject => "${subject}",
-# 	],
-# 	body => "${emailBody}",);
-# 
-# my $sender = Email::Send->new(
-# 	{ mailer => 'Gmail',
-# 	  mailer_args => [ username => "${senderAddress}",
-# 			   password => "${senderPassword}", ]
-# 	});
-# 
-# $sender->send($email) or die "\nError sending email to ${receiverAddress}\n";
-# 
-# print("Sent\n");
 
