@@ -117,20 +117,64 @@ sub removeAccount( ) {
 
 # Have the user select an account and send an email
 sub sendEmail( ) {
-	$account = pickAccount();
+	%account = pickAccount();
+	$senderAddress = $account{'address'};
+	$senderPassword = $account{'password'};
 
-	print "\n";
-	print $account{'address'};
+	print "\nDebugInfo\n";
+	print $senderAddress;
 	print ': ';
-	print $account{'password'};
+	print $senderPassword;
 	print "\n";
 
+	print "Send to: ";
+	$recipient = <STDIN>;
+	chomp($recipient);
+
+	print "Subject: ";
+	$subject = <STDIN>;
+	chomp($subject);
+
+	#### Compose the email
+	system "vim email.txt";
+	open(my $data, '<', 'email.txt') or die "Cancelling...\n";
+	
+	# Read email text into a string
+	my $emailBody = "";
+	while (my $line = <$data>) {
+	       $emailBody = "${emailBody}\n${line}";
+	}
+
+	# Delete the email file
+	unlink $data;
+
+	#### Send the email
+	print("Sending email to ${receiverAddress}... ");
+
+	my $email = Email::Simple->create(
+		header => [
+			From => "${senderAddress}",
+			To => "${recipient}",
+			Subject => "${subject}",
+		],
+		body => "${emailBody}",);
+
+	my $sender = Email::Send->new(
+		{ mailer => 'Gmail',
+		  mailer_args => [ username => "${senderAddress}",
+				   password => "${senderPassword}", ]
+		});
+
+	$sender->send($email) or die "\nError sending email to ${recipient}\n";
+
+	print("Sent\n");
+	exit;
 }
 
 # Find out which command is wanted
 if( scalar @ARGV != 1 ) {
 	# Wrong number of arguments
-	print "Valid commands: send list-account add-account remove-account\n";
+	print "Valid commands: send list-accounts add-account remove-account\n";
 	exit;
 }
 
@@ -140,58 +184,58 @@ if($ARGV[0] eq 'send') {
 	addAccount( );
 } elsif ($ARGV[0] eq 'remove-account') {
 	removeAccount( );
-} elsif ($ARGV[0] eq 'list-account') {
+} elsif ($ARGV[0] eq 'list-accounts') {
 	listAccounts();
 }
 
-print("Email address to send from: ");
-my $senderAddress = <STDIN>;
-chomp($senderAddress);
-
-print("\nPassword: ");
-my $senderPassword = <STDIN>;
-chomp($password);
-
-print("\nEmail address to send to: ");
-my $receiverAddress = <STDIN>;
-chomp($receiverAddress);
-
-print("\nSubject: ");
-my $subject = <STDIN>;
-chomp($subject);
-
-system "vim email.txt";
-
-open(my $data, '<', 'email.txt') or die "Cancelling...\n";
-
-# Read email text into a string
-
-my $emailBody = "";
-
-while (my $line = <$data>) {
-	$emailBody = "${emailBody}\n${line}";
-}
-
-# Delete the email file
-unlink $data;
-
-print("Sending email to ${receiverAddress}... ");
-
-my $email = Email::Simple->create(
-	header => [
-		From => "${senderAddress}",
-		To => "${receiverAddress}",
-		Subject => "${subject}",
-	],
-	body => "${emailBody}",);
-
-my $sender = Email::Send->new(
-	{ mailer => 'Gmail',
-	  mailer_args => [ username => "${senderAddress}",
-			   password => "${senderPassword}", ]
-	});
-
-$sender->send($email) or die "\nError sending email to ${receiverAddress}\n";
-
-print("Sent\n");
+# print("Email address to send from: ");
+# my $senderAddress = <STDIN>;
+# chomp($senderAddress);
+# 
+# print("\nPassword: ");
+# my $senderPassword = <STDIN>;
+# chomp($password);
+# 
+# print("\nEmail address to send to: ");
+# my $receiverAddress = <STDIN>;
+# chomp($receiverAddress);
+# 
+# print("\nSubject: ");
+# my $subject = <STDIN>;
+# chomp($subject);
+# 
+# system "vim email.txt";
+# 
+# open(my $data, '<', 'email.txt') or die "Cancelling...\n";
+# 
+# # Read email text into a string
+# 
+# my $emailBody = "";
+# 
+# while (my $line = <$data>) {
+# 	$emailBody = "${emailBody}\n${line}";
+# }
+# 
+# # Delete the email file
+# unlink $data;
+# 
+# print("Sending email to ${receiverAddress}... ");
+# 
+# my $email = Email::Simple->create(
+# 	header => [
+# 		From => "${senderAddress}",
+# 		To => "${receiverAddress}",
+# 		Subject => "${subject}",
+# 	],
+# 	body => "${emailBody}",);
+# 
+# my $sender = Email::Send->new(
+# 	{ mailer => 'Gmail',
+# 	  mailer_args => [ username => "${senderAddress}",
+# 			   password => "${senderPassword}", ]
+# 	});
+# 
+# $sender->send($email) or die "\nError sending email to ${receiverAddress}\n";
+# 
+# print("Sent\n");
 
