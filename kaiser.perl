@@ -28,7 +28,7 @@ sub getSelection {
 	my $index = -1;
 
 	while( $index < 0 ) {
-		print "${message}\n";
+		print "${message}";
 		$input = <STDIN>;
 		chomp($input);
 
@@ -195,7 +195,7 @@ sub composeEmail( ) {
 
 	### Ask what to do
 	print "\n";
-	my $action = getSelection("[s]end, [d]iscard, or s[a]ve?", "s", "d", "a");
+	my $action = getSelection("[s]end, [d]iscard, or s[a]ve: ", "s", "d", "a");
 	
 	if($action eq 's') {
 		# Send
