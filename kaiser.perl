@@ -3,23 +3,22 @@ use strict;
 use warnings;
 use Crypt::Lite;
 use File::Slurp;
+use Net::IMAP::Simple;
 use Email::Send;
 use Email::Send::Gmail;
+use Email::Simple;
 use Email::Simple::Creator;
-use Term::Bash::Completion::Generator;
+use Term::ANSIColor;
 use List::MoreUtils qw(firstidx);
 
 my $HOME = $ENV{"HOME"};
 my $PATH = "${HOME}/.kaiser";
 
-# Bash Autocompletion
-#generate_bash_completion_function('kaiser', ['send', 'list-accounts', 'add-account', 'remove-account']);
-
 # Arguments: string of message to show, then all the allowed responses
 # returns index of chosen response in the response array
-sub getSelection {
+sub inputSelection {
 	if(scalar(@_) < 2) {
-		die "Invalid arguments in subroutine getSelection()\n";
+		die "Invalid arguments in subroutine inputSelection()\n";
 	}
 
 	my ($message, @allowedInput) = @_;
@@ -45,7 +44,7 @@ sub getSelection {
 }
 
 # Prompts for an email address
-sub getEmail() {
+sub inputEmailAddress() {
 	my $input = <STDIN>;
 	chomp($input);
 
@@ -62,7 +61,7 @@ sub addAccount( ) {
 	print("Adding a Gmail Account\n");
 
 	print("Email address: ");
-	my $address = getEmail();
+	my $address = inputEmailAddress();
 
 	print("Password: ");
 	my $password = <STDIN>;
@@ -163,7 +162,62 @@ sub pickAccount( ) {
 	return $selection;
 }
 
+# Let the user pick an account to delete
 sub removeAccount( ) {
+	my @accounts = getAccounts();
+	my $accountSelection = pickAccount();
+
+	my $accountToRemove = $accounts[$accountSelection]{'address'};
+
+	# Remove the account file
+	system "rm ${PATH}/accounts/${accountToRemove}";
+
+	exit;
+}
+
+# Shows emails, starting with those unread
+sub showEmailList {
+	my @accounts = getAccounts();
+	my $accountSelection = pickAccount();
+
+	my $accountAddress = $accounts[$accountSelection]{'address'};
+	my $accountPassword = $accounts[$accountSelection]{'password'};
+
+	my $messagesToFetch = 20;
+	if( scalar(@_) == 1) {
+		$messagesToFetch = $_[0];
+	}
+
+	# Open connection to IMAP server
+	print "Contacting server...";
+	my $imapServer = Net::IMAP::Simple->new('imap.gmail.com', port=>993, use_ssl=>1) || die "Unable to connect to Gmail\n";
+	$imapServer->login($accountAddress, $accountPassword) || die "Unable to login\n";
+	print "\n";
+
+	my $messageCount = $imapServer->select('INBOX');
+
+	# Select the folder (use inbox for now)
+	my ($unreadMessages, $recentMessages, $totalMessages) = $imapServer->status();
+
+	print "There are ${unreadMessages} unread messages of ${recentMessages} recent messages. There are ${totalMessages} in the inbox\n\n";
+
+	# Iterate through messages
+	for(my $i = $messageCount; $i > $messageCount - $messagesToFetch && $i > 0; $i--){ 
+		my $color = "bold white";
+
+		if($imapServer->seen($i)) {
+			$color = "white";
+		}
+
+		my $email = Email::Simple->new( join '', @{ $imapServer->top($i) } );
+
+
+		print color($color), "  " . $email->header('Subject'), color("reset");
+		print "\n    " . $email->header('From');
+		print "\n    " . $email->header('Date');
+
+		print "\n\n";
+	}
 
 }
 
@@ -176,7 +230,7 @@ sub composeEmail( ) {
 	my $senderPassword = $accounts[$accountSelection]{'password'};
 
 	print "Send to: ";
-	my $recipient = getEmail();
+	my $recipient = inputEmailAddress();
 
 	print "Subject: ";
 	my $subject = <STDIN>;
@@ -195,7 +249,7 @@ sub composeEmail( ) {
 
 	### Ask what to do
 	print "\n";
-	my $action = getSelection("[s]end, [d]iscard, or s[a]ve: ", "s", "d", "a");
+	my $action = inputSelection("[s]end, [d]iscard, or s[a]ve: ", "s", "d", "a");
 	
 	if($action eq 's') {
 		# Send
@@ -246,10 +300,10 @@ sub sendEmail {
 	print("Sent\n");
 }
 
-# Find out which command is wanted
-if( scalar @ARGV != 1 ) {
+# Find out which command is wanted, allow two arguments for 'read'
+if( scalar @ARGV != 1 && !(scalar @ARGV == 2 && $ARGV[0] eq 'read')) {
 	# Wrong number of arguments
-	print "Usage:\nkaiser <compose | list-accounts | add-account | remove-account>\n";
+	print "Usage:\nkaiser <read (number of messages to fetch) | compose | list-accounts | add-account | remove-account>\n";
 	exit;
 }
 
@@ -261,6 +315,12 @@ if($ARGV[0] eq 'compose') {
 	removeAccount( );
 } elsif ($ARGV[0] eq 'list-accounts') {
 	listAccounts();
+} elsif ($ARGV[0] eq 'read') {
+	if(scalar(@ARGV) == 2) {
+		showEmailList($ARGV[1]);
+	} else {
+		showEmailList( );
+	}
 } else {
 	print "Usage:\nkaiser <compose | list-accounts | add-account | remove-account>\n";
 }
