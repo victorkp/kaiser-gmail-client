@@ -8,6 +8,7 @@ use Email::Send;
 use Email::Send::Gmail;
 use Email::Simple;
 use Email::Simple::Creator;
+use HTML::Strip;
 use Term::ANSIColor;
 use List::MoreUtils qw(firstidx);
 
@@ -203,18 +204,35 @@ sub showEmailList {
 
 	# Iterate through messages
 	for(my $i = $messageCount; $i > $messageCount - $messagesToFetch && $i > 0; $i--){ 
-		my $color = "bold white";
+		my $unread = 1;
 
 		if($imapServer->seen($i)) {
-			$color = "white";
+			$unread = 0;
 		}
 
-		my $email = Email::Simple->new( join '', @{ $imapServer->top($i) } );
+		my $email= Email::Simple->new( join '', @{ $imapServer->get($i) } );
 
+		my $htmlStripper = HTML::Strip->new();
 
-		print color($color), "  " . $email->header('Subject'), color("reset");
-		print "\n    " . $email->header('From');
-		print "\n    " . $email->header('Date');
+		my $emailBody = $htmlStripper->parse( $email->body );
+
+		if($unread) {
+			print color("bold red"), "* ", color("reset");
+		} else {
+			print "  ";
+		}
+
+		print color("bold white"), $email->header('Subject');
+		print color("bold white"), "\n  | " . $email->header('From');
+		print color("bold white"), "\n  | " . $email->header('Date'), color("reset");
+
+		foreach( split('\n|\r', $emailBody) ) {
+			
+			print color("bold white"), "  |   ", color("reset");
+		       	print $_ . "\n";
+		}
+
+		print color("bold white"), "  |------------------------", color("reset");
 
 		print "\n\n";
 	}
