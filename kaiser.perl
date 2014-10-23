@@ -200,7 +200,9 @@ sub showEmailList {
 	# Select the folder (use inbox for now)
 	my ($unreadMessages, $recentMessages, $totalMessages) = $imapServer->status();
 
-	print "There are ${unreadMessages} unread messages of ${recentMessages} recent messages. There are ${totalMessages} in the inbox\n\n";
+	my $inboxText = "";
+
+	$inboxText = $inboxText . "There are ${unreadMessages} unread messages of ${recentMessages} recent messages. There are ${totalMessages} in the inbox\n\n";
 
 	# Iterate through messages
 	for(my $i = $messageCount; $i > $messageCount - $messagesToFetch && $i > 0; $i--){ 
@@ -222,21 +224,32 @@ sub showEmailList {
 			print "  ";
 		}
 
-		print color("bold white"), $email->header('Subject');
-		print color("bold white"), "\n  | " . $email->header('From');
-		print color("bold white"), "\n  | " . $email->header('Date'), color("reset");
+		$inboxText = $inboxText . $email->header('Subject');
+		$inboxText = $inboxText . "\n  | " . $email->header('From');
+		$inboxText = $inboxText . "\n  | " . $email->header('Date');
 
 		foreach( split('\n|\r', $emailBody) ) {
-			
-			print color("bold white"), "  |   ", color("reset");
-		       	print $_ . "\n";
+			if( $_ =~ /[a-zA-Z]+ [a-zA-Z][a-zA-Z][a-zA-Z] \d+, \d+ \d+:\d+.+, ".+"\s+[a-zA-Z]+:/) {
+				last;
+			} elsif ( $_ !~ /^>.*$/ && $_ !~ /^\s*$/ ) {
+				$inboxText = $inboxText .  "  |   " . $_ . "\n";
+			}
 		}
 
-		print color("bold white"), "  |------------------------", color("reset");
-
-		print "\n\n";
+		$inboxText = $inboxText . "  |------------------------\n";
+		$inboxText = $inboxText . "  |--Reply-below-this-line-\n\n\n\n";
 	}
 
+	# Open a file, write the inbox text to it
+	open(INBOX_FILE, ">${PATH}/inbox.txt") or die "Could not write to file system\n";
+	print(INBOX_FILE $inboxText);
+	close(INBOX_FILE);
+
+	# Now open the file in the text editor
+	system("vim ${PATH}/inbox.txt");
+
+	# Remove once done
+	system("rm ${PATH}/inbox.txt");
 }
 
 # Have the user select an account and compose an email
@@ -321,7 +334,7 @@ sub sendEmail {
 # Find out which command is wanted, allow two arguments for 'read'
 if( scalar @ARGV != 1 && !(scalar @ARGV == 2 && $ARGV[0] eq 'read')) {
 	# Wrong number of arguments
-	print "Usage:\nkaiser <read (number of messages to fetch) | compose | list-accounts | add-account | remove-account>\n";
+	print "Usage:\nkaiser <read (number of messages to fetch) | compose | list-accounts | add-account | remove-account | config>\n";
 	exit;
 }
 
