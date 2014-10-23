@@ -15,6 +15,9 @@ use List::MoreUtils qw(firstidx);
 my $HOME = $ENV{"HOME"};
 my $PATH = "${HOME}/.kaiser";
 
+# Make sure 'print' flushes 
+BEGIN { $| = 1 }
+
 # Arguments: string of message to show, then all the allowed responses
 # returns index of chosen response in the response array
 sub inputSelection {
@@ -176,6 +179,65 @@ sub removeAccount( ) {
 	exit;
 }
 
+sub processInput {
+	my $imapServer = $_[0];
+	my $senderAddress = $_[1];
+	my $senderPassword = $_[2];
+
+	# Read the inbox file
+	open(INBOX_FILE, "<${PATH}/inbox.txt") or die "Could not write to file system\n";
+
+	my $messageNumber;
+	while (my $line = <INBOX_FILE>) {
+		chomp($line);
+		if($line =~ /End of message \d+/) {
+			$line =~ m/(\d+)/; # Extract message number
+			$messageNumber = $1;
+
+			# If the next line is not "-----Delete-this-email-----",
+			# then delete this email
+			$line = <INBOX_FILE>;
+			chomp($line);
+
+			if($line !~ /Delete/) {
+				# Delete email $messageNumber
+				print "Deleting message ${messageNumber}...\n";
+				$imapServer->delete($messageNumber);
+				next;
+			}
+
+			# If the next line is not "-----Delete-this-email-----",
+			# then delete this email
+			$line = <INBOX_FILE>;
+			chomp($line);
+
+			if($line =~ /Reply/) {
+				# Send a reply
+				# First, read the reply response
+				my $response = "";
+				while($line = <INBOX_FILE>) {
+					if($line =~ /---------------------------/) {
+						last;
+					} else {
+						$response = $response . $line;
+					}
+				}
+
+				# If the response is not blank, then do the reply send
+				if($response !~ /^\s*$/) {
+					# Get the email to know the sender / subject
+					my $email= Email::Simple->new( join '', @{ $imapServer->get($messageNumber) } );
+					my $subject = "Re: " . $email->header('Subject');
+					my $recipient = $email->header('From');
+					sendEmail($senderAddress, $senderPassword, $recipient, $subject, $response);
+				}
+			}
+
+		}
+	}
+
+}
+
 # Shows emails, starting with those unread
 sub showEmailList {
 	my @accounts = getAccounts();
@@ -184,13 +246,13 @@ sub showEmailList {
 	my $accountAddress = $accounts[$accountSelection]{'address'};
 	my $accountPassword = $accounts[$accountSelection]{'password'};
 
-	my $messagesToFetch = 20;
+	my $messagesToFetch = -1;
 	if( scalar(@_) == 1) {
 		$messagesToFetch = $_[0];
 	}
 
 	# Open connection to IMAP server
-	print "Contacting server...";
+	print "Contacting server...\n";
 	my $imapServer = Net::IMAP::Simple->new('imap.gmail.com', port=>993, use_ssl=>1) || die "Unable to connect to Gmail\n";
 	$imapServer->login($accountAddress, $accountPassword) || die "Unable to login\n";
 	print "\n";
@@ -203,6 +265,10 @@ sub showEmailList {
 	my $inboxText = "";
 
 	$inboxText = $inboxText . "There are ${unreadMessages} unread messages of ${recentMessages} recent messages. There are ${totalMessages} in the inbox\n\n";
+
+	if($messagesToFetch < 0) {
+		$messagesToFetch = $unreadMessages;
+	}
 
 	# Iterate through messages
 	for(my $i = $messageCount; $i > $messageCount - $messagesToFetch && $i > 0; $i--){ 
@@ -219,14 +285,15 @@ sub showEmailList {
 		my $emailBody = $htmlStripper->parse( $email->body );
 
 		if($unread) {
-			print color("bold red"), "* ", color("reset");
+			$inboxText = $inboxText . "* ";
 		} else {
-			print "  ";
+			$inboxText = $inboxText . "* ";
 		}
 
 		$inboxText = $inboxText . $email->header('Subject');
 		$inboxText = $inboxText . "\n  | " . $email->header('From');
 		$inboxText = $inboxText . "\n  | " . $email->header('Date');
+		$inboxText = $inboxText . "\n  | \n";
 
 		foreach( split('\n|\r', $emailBody) ) {
 			if( $_ =~ /[a-zA-Z]+ [a-zA-Z][a-zA-Z][a-zA-Z] \d+, \d+ \d+:\d+.+, ".+"\s+[a-zA-Z]+:/) {
@@ -236,8 +303,12 @@ sub showEmailList {
 			}
 		}
 
+		$inboxText = $inboxText . "  | \n";
 		$inboxText = $inboxText . "  |------------------------\n";
-		$inboxText = $inboxText . "  |--Reply-below-this-line-\n\n\n\n";
+		$inboxText = $inboxText . "  | End of message ${i}\n";
+		$inboxText = $inboxText . "-----Delete-this-email-----\n";
+		$inboxText = $inboxText . "---Reply-below-this-line---\n\n\n";
+		$inboxText = $inboxText . "---------------------------\n\n";
 	}
 
 	# Open a file, write the inbox text to it
@@ -247,6 +318,9 @@ sub showEmailList {
 
 	# Now open the file in the text editor
 	system("vim ${PATH}/inbox.txt");
+
+	# See if the user replied/deleted anything
+	processInput($imapServer, $accountAddress, $accountPassword);
 
 	# Remove once done
 	system("rm ${PATH}/inbox.txt");
