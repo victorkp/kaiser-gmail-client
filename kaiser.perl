@@ -12,6 +12,14 @@ use HTML::Strip;
 use Term::ANSIColor;
 use List::MoreUtils qw(firstidx);
 
+# Include Kaiser Modules
+use File::Basename qw(dirname);
+use Cwd  qw(abs_path);
+use lib dirname(abs_path $0) . '/lib/';
+
+use Kaiser::Config;
+
+
 my $HOME = $ENV{"HOME"};
 my $PATH = "${HOME}/.kaiser";
 
@@ -264,7 +272,7 @@ sub showEmailList {
 
 	my $inboxText = "";
 
-	$inboxText = $inboxText . "There are ${unreadMessages} unread messages of ${recentMessages} recent messages. There are ${totalMessages} in the inbox\n\n";
+	$inboxText = $inboxText . "There are ${unreadMessages} unread messages of ${totalMessages} in the inbox\n\n";
 
 	if($messagesToFetch < 0) {
 		$messagesToFetch = $unreadMessages;
@@ -317,7 +325,7 @@ sub showEmailList {
 	close(INBOX_FILE);
 
 	# Now open the file in the text editor
-	system("vim ${PATH}/inbox.txt");
+	system(Kaiser::Config::get_editor() . " ${PATH}/inbox.txt");
 
 	# See if the user replied/deleted anything
 	processInput($imapServer, $accountAddress, $accountPassword);
@@ -342,7 +350,7 @@ sub composeEmail( ) {
 	chomp($subject);
 
 	#### Compose the email
-	system "vim ${recipient}.txt";
+	system Kaiser::Config::get_editor() . " ${recipient}.txt";
 	open(my $data, '<', "${recipient}.txt") or die "Cancelling...\n";
 	
 	# Read email text into a string
@@ -405,10 +413,21 @@ sub sendEmail {
 	print("Sent\n");
 }
 
-# Find out which command is wanted, allow two arguments for 'read'
-if( scalar @ARGV != 1 && !(scalar @ARGV == 2 && $ARGV[0] eq 'read')) {
-	# Wrong number of arguments
-	print "Usage:\nkaiser <read (number of messages to fetch) | compose | list-accounts | add-account | remove-account | config>\n";
+sub print_usage() {
+	print "Kaiser Usage: kaiser <read (number of messages to fetch) | compose | list-accounts | add-account | remove-account | config>\n";
+}
+
+sub print_config_usage() {
+	print "Kaiser Config Usage: kaiser config set-editor <EDITOR>\n";
+}
+
+
+
+# Load the configuration file
+Kaiser::Config::load_config($PATH);
+
+if( scalar @ARGV == 0 ) {
+	print_usage();
 	exit;
 }
 
@@ -423,10 +442,22 @@ if($ARGV[0] eq 'compose') {
 } elsif ($ARGV[0] eq 'read') {
 	if(scalar(@ARGV) == 2) {
 		showEmailList($ARGV[1]);
-	} else {
+	} elsif (scalar @ARGV == 1) {
 		showEmailList( );
+	} else {
+		print_usage();
+	}
+} elsif ($ARGV[0] eq 'config') {
+	if(scalar(@ARGV) != 3) {
+		print_config_usage();
+	} else {
+		if($ARGV[1] eq 'set-editor') {
+			Kaiser::Config::set_editor($ARGV[2]);
+		} else {
+			print_config_usage();
+		}
 	}
 } else {
-	print "Usage:\nkaiser <compose | list-accounts | add-account | remove-account>\n";
+	print_usage();
 }
 
