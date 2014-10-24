@@ -16,8 +16,8 @@ When reading email, everything is displayed as plain text and opened in the text
 The above screenshot is a sample output of `kaiser read`.
 
 ### Replying ###
-Simply type your reply between the `Reply below this line` and the `-----` separator lines. When the file is saved and closed, the reply will be sent.
+Simply type your reply between the `Reply-below-this-line` and the `-----` separator lines. When the file is saved and closed, the reply will be sent.
 
 ### Deleting ###
-Delete the "Delete this line" immediately below the email you wish to delete. When the file is saved and closed, the email will be deleted.
+Delete the `Delete-this-line` immediately below the email you wish to delete. When the file is saved and closed, the email will be deleted.
 
