@@ -274,7 +274,7 @@ sub showEmailList {
 
 	$inboxText = $inboxText . "There are ${unreadMessages} unread messages of ${totalMessages} in the inbox\n\n";
 
-	if($messagesToFetch < 0) {
+	if($messagesToFetch <= 0) {
 		$messagesToFetch = $unreadMessages;
 	}
 
@@ -418,7 +418,9 @@ sub print_usage() {
 }
 
 sub print_config_usage() {
-	print "Kaiser Config Usage: kaiser config set-editor <EDITOR>\n";
+	print "Kaiser Config Usage: \n";
+	print "\tkaiser config set-editor <EDITOR>\n";
+	print "\tkaiser config set-read-messages <NUMBER TO READ, 0 FOR READ UNREAD>\n";
 }
 
 
@@ -443,7 +445,7 @@ if($ARGV[0] eq 'compose') {
 	if(scalar(@ARGV) == 2) {
 		showEmailList($ARGV[1]);
 	} elsif (scalar @ARGV == 1) {
-		showEmailList( );
+		showEmailList(Kaiser::Config::get_read_messages() );
 	} else {
 		print_usage();
 	}
@@ -453,6 +455,8 @@ if($ARGV[0] eq 'compose') {
 	} else {
 		if($ARGV[1] eq 'set-editor') {
 			Kaiser::Config::set_editor($ARGV[2]);
+		} elsif ($ARGV[1] eq 'set-read-messages') {
+			Kaiser::Config::set_read_messages($ARGV[2]);
 		} else {
 			print_config_usage();
 		}
