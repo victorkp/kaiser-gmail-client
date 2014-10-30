@@ -1,5 +1,5 @@
 ## Kaiser Gmail Client ##
-An extremely simple, command-line client for Gmail written in Perl.
+A Gmail client that separates email client from text editor - use your favorite text editor to read, write, reply to, and delete messages in your inbox~
 
 ## Installation and Uninstallation ##
 Run `make install` or `make uninstall` with elevated privileges in order to install.
