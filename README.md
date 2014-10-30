@@ -29,7 +29,8 @@ Use `kaiser config` and then one of the following commands to change functionali
 ### set-editor ###
 
 Use `kaiser config set-editor \<EDITOR\>` to change the text editor that Kaiser will invoke when reading and writing emails. You can use a terminal-based or a GUI editor - as long as it can write text files, it'll work.
- - Example: `kaiser config set-editor vim` or `kaiser config set-editor gedit`.
+ - Example: `kaiser config set-editor vim`
+ - Example: `kaiser config set-editor gedit`.
 
 ### set-read-messages ###
 
