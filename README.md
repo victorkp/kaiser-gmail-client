@@ -27,10 +27,10 @@ Kaiser is quite customizeable. By default, the vi editor is used to read and wri
 Use `kaiser config` and then one of the following commands to change functionality of Kaiser.
 ### set-editor ###
 Use `kaiser config set-editor \<EDITOR\>` to change the text editor that Kaiser will invoke when reading and writing emails. You can use a terminal-based or a GUI editor - as long as it can write text files, it'll work.
-Example: `kaiser config set-editor vim` or `kaiser config set-editor gedit`.
+ - Example: `kaiser config set-editor vim` or `kaiser config set-editor gedit`.
 ### set-read-messages ###
 Use 'kaiser config set-read-messages \<NUMBER OF MESSAGES\>` to set how many messages to display when using `kaiser read`. You may use `kaiser config set-read-messages 0' to show all the unread messages in your inbox, or use a negative number to show all unread messages plus additional older messages.
-Example: `kaiser config set-read-messages 5` shows 5 messages when you use `kaiser read`.
-Example: `kaiser config set-read-messages 0` shows only your unread messages when you use `kaiser read`.
-Example: `kaiser config set-read-messages -3` shows your unread messages plus three already read messages when you use `kaiser read`.
+ - Example: `kaiser config set-read-messages 5` shows 5 messages when you use `kaiser read`.
+ - Example: `kaiser config set-read-messages 0` shows only your unread messages when you use `kaiser read`.
+ - Example: `kaiser config set-read-messages -3` shows your unread messages plus three already read messages when you use `kaiser read`.
 
