@@ -7,6 +7,11 @@ Run `make install` or `make uninstall` with elevated privileges in order to inst
 ## Usage ##
 kaiser \<compose \| read \<optional number of emails to show\> \| add-account \| remove-account \| list-accounts \| config\>
 
+## Composing a Message ##
+Use `kaiser compose` to start writing a message, fill in the receiver address, and the subject field. At this point, your text editor (default vi, see the Config section for how to change this) will open and allow you to type your message. After saving and closing the file, you'll be prompted if you'd like to send, save as a draft, or discard this message.
+
+![kaiser compose Screenshot](screenshots/compose.png)
+
 ## Reading, Replying, and Deleting Mail ##
 Use `kaiser read`  to display all unread emails you have, or use `kaiser read XXX` where `XXX` is the number of messages to show.
 
