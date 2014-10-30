@@ -1,5 +1,5 @@
 ## Kaiser Gmail Client ##
-A Gmail client that separates email client from text editor - use your favorite text editor to read, write, reply to, and delete messages in your inbox~
+A command line Gmail client that separates email client from text editor - use your favorite text editor to read, write, reply to, and delete messages in your inbox~
 
 ## Installation and Uninstallation ##
 Run `make install` or `make uninstall` with elevated privileges in order to install.
