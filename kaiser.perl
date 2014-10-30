@@ -274,8 +274,11 @@ sub showEmailList {
 
 	$inboxText = $inboxText . "There are ${unreadMessages} unread messages of ${totalMessages} in the inbox\n\n";
 
-	if($messagesToFetch <= 0) {
+	if($messagesToFetch == 0) {
 		$messagesToFetch = $unreadMessages;
+	} elsif ($messagesToFetch < 0) {
+		$messagesToFetch *= -1;
+		$messagesToFetch += $unreadMessages;
 	}
 
 	# Iterate through messages
