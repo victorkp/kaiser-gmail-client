@@ -18,6 +18,7 @@ use Cwd  qw(abs_path);
 use lib dirname(abs_path $0) . '/lib/';
 
 use Kaiser::Config;
+use Kaiser::Accounts;
 
 
 my $HOME = $ENV{"HOME"};
@@ -67,124 +68,6 @@ sub inputEmailAddress() {
 	}
 
 	return $input;
-}
-
-sub addAccount( ) {
-	print("Adding a Gmail Account\n");
-
-	print("Email address: ");
-	my $address = inputEmailAddress();
-
-	print("Password: ");
-	my $password = <STDIN>;
-	chomp($password);
-
-	# Make the accounts folder if it does not already exist
-	system "mkdir -p ${PATH}/accounts";
-
-	# Encrypt and write to file 
-	my $crypt = Crypt::Lite->new(debug=>0);
-	$password = $crypt->encrypt($password, $address);
-
-	system "echo \"${password}\" >> ${PATH}/accounts/${address}";
-
-	exit;
-}
-
-# Return array of hashes with 'address' and 'password'
-sub getAccounts( ) {
-	opendir(my $accountDir, "${PATH}/accounts/") or die "No accounts. Add one with 'add-account'\n";
-	my @accountFiles = readdir($accountDir);
-
-	my @accounts = ();
-
-	foreach(@accountFiles) {
-		if($_ eq '.' || $_ eq '..') {
-			next;
-		}
-
-		my $address = $_;
-
-		open(my $file, '<', "$PATH/accounts/${address}") or die "Could not open account file\n";
-
-		my $password = read_file($file);
-
-		# Decrypt the password
-		my $crypt = Crypt::Lite->new(debug=>0);
-		$password = $crypt->decrypt($password, $address);
-
-		push @accounts, { address=>$address, password=>$password };
-
-		close($file);
-	}
-
-	closedir($accountDir);
-
-	return @accounts;
-}
-
-# Argument is whether or not to also print numbers with accounts
-sub listAccounts( ) {
-	my $showNumbers = 1;
-
-	if(scalar(@_) > 0) {
-		$showNumbers = $_[0];
-	}
-
-	my @accounts = getAccounts();
-
-	for(my $i = 0; $i < scalar(@accounts); $i++) {
-		my $address = $accounts[$i]{'address'};
-		my $password = $accounts[$i]{'password'};
-
-		if($showNumbers) {
-			print "${i}: ${address}\n";
-		} else {
-			print "${address}\n";
-		}
-	}
-}
-
-# Returns a reference to a  %account
-sub pickAccount( ) {
-	my @accounts = getAccounts();
-
-	# If there are no accounts, exit
-	if(scalar(@accounts) == 0) {
-		print "There are no accounts. Add one with 'add-account'";
-		exit;
-	}
-
-	# If there is only one account, return it
-	if(scalar(@accounts) == 1){
-		return 0;
-	}
-
-	# Otherwise we need to pick an account
-	listAccounts();
-
-	my $selection = -1;
-	while($selection < 0 || $selection >= scalar(@accounts)) {
-		# While the selection is invalid
-		print "Enter number of account: ";
-		$selection = <STDIN>;
-		chomp($selection);
-	}
-
-	return $selection;
-}
-
-# Let the user pick an account to delete
-sub removeAccount( ) {
-	my @accounts = getAccounts();
-	my $accountSelection = pickAccount();
-
-	my $accountToRemove = $accounts[$accountSelection]{'address'};
-
-	# Remove the account file
-	system "rm ${PATH}/accounts/${accountToRemove}";
-
-	exit;
 }
 
 sub processInput {
@@ -248,8 +131,8 @@ sub processInput {
 
 # Shows emails, starting with those unread
 sub showEmailList {
-	my @accounts = getAccounts();
-	my $accountSelection = pickAccount();
+	my @accounts = Kaiser::Accounts::get_accounts();
+	my $accountSelection = Kaiser::Accounts::pick_account();
 
 	my $accountAddress = $accounts[$accountSelection]{'address'};
 	my $accountPassword = $accounts[$accountSelection]{'password'};
@@ -339,8 +222,8 @@ sub showEmailList {
 
 # Have the user select an account and compose an email
 sub composeEmail( ) {
-	my @accounts = getAccounts();
-	my $accountSelection = pickAccount();
+	my @accounts = Kaiser::Accounts::get_accounts();
+	my $accountSelection = Kaiser::Accounts::pick_account();
 
 	my $senderAddress = $accounts[$accountSelection]{'address'};
 	my $senderPassword = $accounts[$accountSelection]{'password'};
@@ -428,8 +311,9 @@ sub print_config_usage() {
 
 
 
-# Load the configuration file
+# Load the configuration file and accounts
 Kaiser::Config::load_config($PATH);
+Kaiser::Accounts::load_accounts($PATH);
 
 if( scalar @ARGV == 0 ) {
 	print_usage();
@@ -439,11 +323,11 @@ if( scalar @ARGV == 0 ) {
 if($ARGV[0] eq 'compose') {
 	composeEmail( );
 } elsif ($ARGV[0] eq 'add-account') {
-	addAccount( );
+	Kaiser::Accounts::add_account();
 } elsif ($ARGV[0] eq 'remove-account') {
-	removeAccount( );
+	Kaiser::Accounts::remove_account( );
 } elsif ($ARGV[0] eq 'list-accounts') {
-	listAccounts();
+	Kaiser::Accounts::list_accounts();
 } elsif ($ARGV[0] eq 'read') {
 	if(scalar(@ARGV) == 2) {
 		showEmailList($ARGV[1]);
