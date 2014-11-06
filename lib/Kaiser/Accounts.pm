@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Crypt::Lite;
 use File::Slurp;
+use IO::Prompt;
 
 
 use Exporter qw(import);
