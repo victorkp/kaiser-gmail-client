@@ -15,12 +15,14 @@ use Exporter qw(import);
 	@EXPORT_OK = qw(load_config, set_editor, get_editor, get_read_messages, set_read_messages);
 }
 
-my $DEFAULT_EDITOR = "vim";
+my $DEFAULT_EDITOR = "vi";
 my $DEFAULT_READ_MESSAGES = -1;
+my $DEFAULT_SYNC_TIME = 60 * 5; # Five minute sync time
 
 my $config_file_path; # Config path
 my $editor = $DEFAULT_EDITOR; # Config editor
 my $read_messages = $DEFAULT_READ_MESSAGES;
+my $sync_time = $DEFAULT_SYNC_TIME;
 
 
 # Parses a line in the config file
@@ -33,6 +35,9 @@ sub parse_config_line($) {
 	} elsif ($line =~ m/read-messages\s*:\s*(.+)\s*/) {
 		# Set the default messages to read
 		$read_messages = $1;
+	} elsif ($line =~ m/sync-time\s*:\s*(\d+)\s*/) {
+		# Set the sync time
+		$sync_time = $1;
 	}
 }
 
@@ -61,6 +66,7 @@ sub write_config() {
 	my $config_text = "";
 	$config_text .= "editor : ${editor}\n";
 	$config_text .= "read-messages : ${read_messages}\n";
+	$config_text .= "sync-time : ${sync_time}\n";
 	
 	open(my $config_file, ">", $config_file_path) or die "Could not open config";
 	print($config_file $config_text);
@@ -90,6 +96,18 @@ sub set_read_messages($) {
 # <= 0 for read all unread messages
 sub get_read_messages() {
 	return $read_messages;
+}
+
+# Set the time to sync (in milliseconds)
+sub set_synctime($) {
+	my $input = $_[0];
+	$sync_time = $input;
+	write_config();
+}
+
+# Return the number of milliseconds between syncs
+sub get_synctime() {
+	return $sync_time;
 }
 
 1;

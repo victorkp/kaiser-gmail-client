@@ -206,12 +206,12 @@ sub showEmailList {
 	}
 
 	# Open a file, write the inbox text to it
-	open(INBOX_FILE, ">${PATH}/inbox.txt") or die "Could not write to file system\n";
+	open(INBOX_FILE, ">${PATH}/${accountAddress}.txt") or die "Could not write to file system\n";
 	print(INBOX_FILE $inboxText);
 	close(INBOX_FILE);
 
 	# Now open the file in the text editor
-	system(Kaiser::Config::get_editor() . " ${PATH}/inbox.txt");
+	system(Kaiser::Config::get_editor() . " ${PATH}/${accountAddress}.txt");
 
 	# See if the user replied/deleted anything
 	processInput($imapServer, $accountAddress, $accountPassword);
