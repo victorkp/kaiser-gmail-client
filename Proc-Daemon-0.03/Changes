@@ -1,0 +1,15 @@
+Revision history for Perl extension Proc::Daemon.
+
+0.03  Thu Jun 19 2003
+	- Licensing is more explicit: Either GPL or Artistic.
+	- Updated author contact information.
+
+0.02  Sat Apr 17 1999
+	- init() function superceded by Init() function.
+	- All open files are closed during daemonization.
+	- A double fork is now down to avoid the potential of acquiring
+	  a controlling terminal.
+	- Added Fork() and OpenMax() functions.
+
+0.01  Thu Jan 27 1998
+	- initial bundled release

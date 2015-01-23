@@ -1,0 +1,11 @@
+[Unit]
+Description=Kaiser background email sync daemon
+
+[Service]
+Type=simple
+ExecStart=/usr/local/etc/kaiser-gmail/kaiser-fetch-daemon.perl 
+StandardInput=tty
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

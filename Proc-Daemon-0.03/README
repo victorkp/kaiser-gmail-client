@@ -1,0 +1,48 @@
+README for Proc::Daemon v0.03
+
+---------------------------------------------------------------------------
+    Copyright (C) 1997-1999	Earl Hood, earl@earlhood.com
+        All rights reserved.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of either:
+  
+    a) the GNU General Public License as published by the Free Software
+       Foundation; either version 1, or (at your option) any later
+       version, or
+  
+    b) the "Artistic License" which comes with Perl.
+
+---------------------------------------------------------------------------
+SUMMARY
+
+Proc::Daemon provides the capability for a Perl program to run
+as a Unix daemon process.
+
+---------------------------------------------------------------------------
+INSTALLATION
+
+You should be able to install the module(s) with the following:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+If you want to install in a specific directory, try:
+
+    perl Makefile.PL PREFIX=/tmp/myperl5
+    make
+    make test
+    make install
+
+---------------------------------------------------------------------------
+DOCUMENTATION
+
+Documentation is in POD format and should automatically get installed
+with the module(s).
+
+---------------------------------------------------------------------------
+Earl Hood, earl@earlhood.com
+<http://www.earlhood.com/>
+03/06/19 17:50:50

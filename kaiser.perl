@@ -76,7 +76,7 @@ sub processInput {
 	my $senderPassword = $_[2];
 
 	# Read the inbox file
-	open(INBOX_FILE, "<${PATH}/inbox.txt") or die "Could not write to file system\n";
+	open(INBOX_FILE, "<${PATH}/${senderAddress}.txt") or die "Could not read from file system\n";
 
 	my $messageNumber;
 	while (my $line = <INBOX_FILE>) {
@@ -217,7 +217,7 @@ sub showEmailList {
 	processInput($imapServer, $accountAddress, $accountPassword);
 
 	# Remove once done
-	system("rm ${PATH}/inbox.txt");
+	system("rm ${PATH}/${accountAddress}.txt");
 }
 
 # Have the user select an account and compose an email
