@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use threads;
 use Crypt::Lite;
 use File::Slurp;
 use Net::IMAP::Simple;
