@@ -138,7 +138,6 @@ sub processInput {
 				print "Deleting message ${messageNumber}...\n";
 				$imapServer->delete($messageNumber);
 			} elsif ($shouldArchive) {
-				print "Available server flags: " . join(", ", $imapServer->flags) . "\n";
 				print "Archiving message ${messageNumber}...\n";
 				$imapServer->add_flags($messageNumber, qw(\Deleted));
 			}
