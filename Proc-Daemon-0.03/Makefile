@@ -18,7 +18,7 @@
 #     PREREQ_PM => {  }
 #     TEST_REQUIRES => {  }
 #     VERSION_FROM => q[Daemon.pm]
-#     dist => { SUFFIX=>q[gz], COMPRESS=>q[gzip] }
+#     dist => { COMPRESS=>q[gzip], SUFFIX=>q[gz] }
 
 # --- MakeMaker post_initialize section:
 
@@ -469,7 +469,7 @@ realclean_subdirs :
 # Delete temporary files (via clean) and also delete dist files
 realclean purge ::  clean realclean_subdirs
 	- $(RM_F) \
-	  $(MAKEFILE_OLD) $(FIRST_MAKEFILE) 
+	  $(FIRST_MAKEFILE) $(MAKEFILE_OLD) 
 	- $(RM_RF) \
 	  $(DISTVNAME) 
 

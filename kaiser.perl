@@ -218,15 +218,18 @@ sub showEmailList {
 		$inboxText = $inboxText . "\n  | " . $email->header('Date');
 		$inboxText = $inboxText . "\n  | \n";
 
+		# Exclude attachments with --[a-fA-F0-9]{28}[\sA-Za-z0-9=]+[a-fA-F0-9]{28}--
+
 		foreach( split('\n|\r', $emailBody) ) {
 			if( $_ =~ /[a-zA-Z]+ [a-zA-Z][a-zA-Z][a-zA-Z] \d+, \d+ \d+:\d+.+, ".+"\s+[a-zA-Z]+:/) {
 				last;
-			} elsif ( $_ !~ /^>.*$/ && $_ !~ /^\s*$/ ) {
+			} elsif ( $_ !~ /^>.*$/ && $_ !~ /^\s*$/ && $_ !~ /^Content-/) {
+				$_ =~ s/=$//g;
 				$inboxText = $inboxText .  "  |   " . $_ . "\n";
 			}
 		}
 
-		$inboxText = $inboxText . "  | \n";
+		$inboxText = $inboxText . "  |   \n";
 		$inboxText = $inboxText . "  |------------------------\n";
 		$inboxText = $inboxText . "  | End of message ${i}\n";
 		$inboxText = $inboxText . "-----Delete-this-email-----\n";
@@ -234,6 +237,17 @@ sub showEmailList {
 		$inboxText = $inboxText . "---Reply-below-this-line---\n\n\n";
 		$inboxText = $inboxText . "---------------------------\n\n";
 	}
+
+	$inboxText =~ s/--[a-fA-F0-9]{28}[\sA-Za-z0-9=|\-]+--[a-fA-F0-9\-]{28}--//g; # Ignore attachments
+	$inboxText =~ s/--[a-fA-F0-9]{28}[\sA-Za-z0-9=|\-]+[a-fA-F0-9\-]{28}--//g; # Ignore attachments
+	$inboxText =~ s/--[a-fA-F0-9]{28}[\sA-Za-z0-9=|\-]+--[a-fA-F0-9\-]{28}//g; # Ignore attachments
+	$inboxText =~ s/--[a-fA-F0-9]{28}[\sA-Za-z0-9=|\-]+|   \n/\n/g; # Ignore attachments at end
+	$inboxText =~ s/:VCALENDAR[\s\S]*END:VCALENDAR/  |/g; # Ignore VCALENDAR events
+	$inboxText =~ s/------=.*\s/\n/g; # Remove ------=Part... tags
+	$inboxText =~ s/\[image:.*\]//g; # Remove image references
+
+	# Remove non-ASCII Characters
+	$inboxText =~ s/[^[:ascii:]]+//g;
 
 	# Open a file, write the inbox text to it
 	open(INBOX_FILE, ">${PATH}/${accountAddress}.txt") or die "Could not write to file system\n";
