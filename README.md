@@ -23,8 +23,8 @@ The above screenshot is a sample output of `kaiser read` when using `vim` as the
 ### Replying ###
 Simply type your reply between the `Reply-below-this-line` and the `-----` separator lines. When the file is saved and closed, the reply will be sent.
 
-### Deleting ###
-Delete the `Delete-this-line` immediately below the email you wish to delete. When the file is saved and closed, the email will be deleted.
+### Deleting and Archiving ###
+Delete the `Delete-this-email` or `Archive-this-email` line immediately below the email you wish to delete or archive. When the file is saved and closed, the email will be deleted. Note that you can both reply to and delete/archive an email at the same time.
 
 ## Config ##
 Kaiser is quite customizeable. By default, the vi editor is used to read and write emails, however you can tell Kaiser to use whatever editor you prefer.
