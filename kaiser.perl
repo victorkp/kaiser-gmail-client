@@ -86,6 +86,9 @@ sub processInput {
 			$line =~ m/(\d+)/; # Extract message number
 			$messageNumber = $1;
 
+			my $shouldDelete = 0;
+			my $shouldArchive = 0;
+
 			# If the next line is not "-----Delete-this-email-----",
 			# then delete this email
 			$line = <INBOX_FILE>;
@@ -93,15 +96,21 @@ sub processInput {
 
 			if($line !~ /Delete/) {
 				# Delete email $messageNumber
-				print "Deleting message ${messageNumber}...\n";
-				$imapServer->delete($messageNumber);
-				next;
+				$shouldDelete = 1;
+			} else {
+				# Advance in the possible actions
+				$line = <INBOX_FILE>;
+				chomp($line);
 			}
 
-			# If the next line is not "-----Delete-this-email-----",
-			# then delete this email
-			$line = <INBOX_FILE>;
-			chomp($line);
+			if($line !~ /Archive/) {
+				# Archive email $messageNuber
+				$shouldArchive = 1;
+			} else {
+				# Advance in the possible actions
+				$line = <INBOX_FILE>;
+				chomp($line);
+			}
 
 			if($line =~ /Reply/) {
 				# Send a reply
@@ -123,6 +132,15 @@ sub processInput {
 					my $recipient = $email->header('From');
 					sendEmail($senderAddress, $senderPassword, $recipient, $subject, $response);
 				}
+			}
+
+			if($shouldDelete) {
+				print "Deleting message ${messageNumber}...\n";
+				$imapServer->delete($messageNumber);
+			} elsif ($shouldArchive) {
+				print "Available server flags: " . join(", ", $imapServer->flags) . "\n";
+				print "Archiving message ${messageNumber}...\n";
+				$imapServer->add_flags($messageNumber, qw(\Deleted));
 			}
 
 		}
@@ -165,6 +183,17 @@ sub showEmailList {
 		$messagesToFetch += $unreadMessages;
 	}
 
+	#my @email_threads = ( );
+	#my @emails = ( );
+	#for(my $i = $messageCount; $i > $messageCount - $messagesToFetch && $i > 0; $i--){ 
+	#	my $thread = threads->new( sub { 
+	#		my $index = $i;
+	#		my $email= Email::Simple->new( join '', @{ $imapServer->get($i) } );
+	#		@emails[$index] = $email;
+	#	});
+	#	push(@email_threads, $thread);
+	#}
+
 	# Iterate through messages
 	for(my $i = $messageCount; $i > $messageCount - $messagesToFetch && $i > 0; $i--){ 
 		my $unread = 1;
@@ -202,6 +231,7 @@ sub showEmailList {
 		$inboxText = $inboxText . "  |------------------------\n";
 		$inboxText = $inboxText . "  | End of message ${i}\n";
 		$inboxText = $inboxText . "-----Delete-this-email-----\n";
+		$inboxText = $inboxText . "----Archive-this-email-----\n";
 		$inboxText = $inboxText . "---Reply-below-this-line---\n\n\n";
 		$inboxText = $inboxText . "---------------------------\n\n";
 	}

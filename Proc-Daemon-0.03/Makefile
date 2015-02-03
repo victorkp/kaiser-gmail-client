@@ -18,7 +18,7 @@
 #     PREREQ_PM => {  }
 #     TEST_REQUIRES => {  }
 #     VERSION_FROM => q[Daemon.pm]
-#     dist => { COMPRESS=>q[gzip], SUFFIX=>q[gz] }
+#     dist => { SUFFIX=>q[gz], COMPRESS=>q[gzip] }
 
 # --- MakeMaker post_initialize section:
 

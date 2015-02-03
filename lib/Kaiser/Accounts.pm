@@ -2,6 +2,7 @@ package Kaiser::Accounts;
 
 use strict;
 use warnings;
+use Term::ReadKey;
 use Crypt::Lite;
 use File::Slurp;
 use IO::Prompt;
@@ -23,6 +24,43 @@ my $accounts_folder_path; # Config path
 sub load_accounts($) {
 	$accounts_folder_path = $_[0];
 	$accounts_folder_path .= "/accounts";
+}
+
+sub add_account( ) {
+	print "Enter email address: ";
+	my $address = <STDIN>;
+	chomp($address);
+
+	if($address !~ /.+@.+\..+/) {
+		print "Email address doesn't look right\n";
+		die "\n";
+	}
+
+	print "Enter password: ";
+	ReadMode('noecho'); # hide password
+	my $password = <STDIN>;
+	chomp($password);
+	ReadMode(0); # back to normal text entry
+
+	print "\n";
+
+	if(length($password) < 1) {
+		print "Password cannot be blank";
+		die "\n";
+	}
+
+	system "mkdir -p $accounts_folder_path";
+
+	# Encrypt password
+	my $crypt = Crypt::Lite->new(debug=>0);
+	$password = $crypt->encrypt($password, $address);
+
+	# Write account file
+	open(ACCOUNT, ">$accounts_folder_path/$address") or die "Could not write account file\n";
+	print ACCOUNT "$password";
+	close(ACCOUNT);
+
+	print "Added accoung $address\n";
 }
 
 # Return array of hashes with 'address' and 'password'
