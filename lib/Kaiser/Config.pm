@@ -1,4 +1,5 @@
 package Kaiser::Config;
+use File::Spec;
 use strict;
 use warnings;
 
@@ -47,8 +48,12 @@ sub load_config($) {
 	$config_file_path = $_[0];
 	$config_file_path .= "/config";
 
-	system "touch ${config_file_path}";
-	open(CONFIG_FILE, "<${config_file_path}") or die "Could not open config";
+
+    if (! -e $config_file_path) {
+        write_config();
+    }
+    
+	open(CONFIG_FILE, "<${config_file_path}") or die "Could not open config\n";
 	
 	while(my $line = <CONFIG_FILE>) {
 		chomp($line);
@@ -67,8 +72,9 @@ sub write_config() {
 	$config_text .= "editor : ${editor}\n";
 	$config_text .= "read-messages : ${read_messages}\n";
 	$config_text .= "sync-time : ${sync_time}\n";
-	
-	open(my $config_file, ">", $config_file_path) or die "Could not open config";
+
+    system "mkdir -p ${config_file_path}";
+	open(my $config_file, ">", $config_file_path) or die "Could not open config\n";
 	print($config_file $config_text);
 	close($config_file);
 }
