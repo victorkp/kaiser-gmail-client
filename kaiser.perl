@@ -183,7 +183,8 @@ sub showEmailList {
 	}
 
 	# Iterate through messages
-	for(my $i = $messageCount; $i > $messageCount - $messagesToFetch && $i > 0; $i--){ 
+    print("Getting messages");
+	for(my $i = $messageCount; $i > $messageCount - $messagesToFetch && $i > 0; $i--){
 		my $unread = 1;
 
 		if($imapServer->seen($i)) {
@@ -191,6 +192,21 @@ sub showEmailList {
 		}
 
 		my $email= Email::MIME->new( join '', @{ $imapServer->get($i) } );
+
+        my @attachments;
+        $email->walk_parts(sub {
+            my ($part) = @_;
+
+            return if $part->subparts; # multipart
+            my $content_type = $part->content_type;
+            # print("content_type: $content_type \n");
+         
+            # Parts with a name specified tend to be attachments
+            if ($part->content_type =~ m[name]i) {
+                my $filename = $part->filename();
+                push @attachments, $filename;
+            }
+        });
 
 		my $emailBody = $email->body;
 
@@ -221,17 +237,16 @@ sub showEmailList {
 		$inboxText = $inboxText . "  | End of message ${i}\n";
 		$inboxText = $inboxText . "-----Delete-this-email-----\n";
 		$inboxText = $inboxText . "----Archive-this-email-----\n";
+        foreach my $filename (@attachments) {
+		    $inboxText = $inboxText . "----Save-Attachment-${filename}----\n";
+        }
 		$inboxText = $inboxText . "---Reply-below-this-line---\n\n\n";
 		$inboxText = $inboxText . "---------------------------\n\n";
-	}
 
-	$inboxText =~ s/--[a-fA-F0-9]{28}[\sA-Za-z0-9=|\-]+--[a-fA-F0-9\-]{28}--//g; # Ignore attachments
-	$inboxText =~ s/--[a-fA-F0-9]{28}[\sA-Za-z0-9=|\-]+[a-fA-F0-9\-]{28}--//g; # Ignore attachments
-	$inboxText =~ s/--[a-fA-F0-9]{28}[\sA-Za-z0-9=|\-]+--[a-fA-F0-9\-]{28}//g; # Ignore attachments
-	$inboxText =~ s/--[a-fA-F0-9]{28}[\sA-Za-z0-9=|\-]+|   \n/\n/g; # Ignore attachments at end
-	$inboxText =~ s/:VCALENDAR[\s\S]*END:VCALENDAR/  |/g; # Ignore VCALENDAR events
-	$inboxText =~ s/------=.*\s/\n/g; # Remove ------=Part... tags
-	$inboxText =~ s/\[image:.*\]//g; # Remove image references
+        # Print a '.' per email to indicate progress
+        print(".");
+	}
+    print("\n");
 
 	# Remove non-ASCII Characters
 	$inboxText =~ s/[^[:ascii:]]+//g;
