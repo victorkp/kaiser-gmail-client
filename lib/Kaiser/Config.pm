@@ -20,7 +20,8 @@ my $DEFAULT_EDITOR = "vi";
 my $DEFAULT_READ_MESSAGES = -1;
 my $DEFAULT_SYNC_TIME = 60 * 5; # Five minute sync time
 
-my $config_file_path; # Config path
+my $config_dir_path; # Config directory path (generally ~/.kaiser)
+my $config_file_path; # Config file path (generally ~/.kaiser/config
 my $editor = $DEFAULT_EDITOR; # Config editor
 my $read_messages = $DEFAULT_READ_MESSAGES;
 my $sync_time = $DEFAULT_SYNC_TIME;
@@ -45,15 +46,14 @@ sub parse_config_line($) {
 # Setup the config. Expect the 
 # Kaiser data direcotry as an argument
 sub load_config($) {
-	$config_file_path = $_[0];
-	$config_file_path .= "/config";
-
+	$config_dir_path = $_[0];
+	$config_file_path = $config_dir_path . "/config";
 
     if (! -e $config_file_path) {
         write_config();
     }
     
-	open(CONFIG_FILE, "<${config_file_path}") or die "Could not open config\n";
+	open(CONFIG_FILE, "<${config_file_path}") or die "Could not read config: ${config_file_path}\n";
 	
 	while(my $line = <CONFIG_FILE>) {
 		chomp($line);
@@ -73,8 +73,9 @@ sub write_config() {
 	$config_text .= "read-messages : ${read_messages}\n";
 	$config_text .= "sync-time : ${sync_time}\n";
 
-    system "mkdir -p ${config_file_path}";
-	open(my $config_file, ">", $config_file_path) or die "Could not open config\n";
+    system "mkdir -p ${config_dir_path}";
+    system "touch ${config_file_path}";
+	open(my $config_file, ">", $config_file_path) or die "Could not write config: ${config_file_path}\n";
 	print($config_file $config_text);
 	close($config_file);
 }

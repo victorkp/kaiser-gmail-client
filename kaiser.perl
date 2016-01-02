@@ -7,9 +7,9 @@ use File::Slurp;
 use Net::IMAP::Simple;
 use Email::Send;
 use Email::Send::Gmail;
+use Email::MIME;
 use Email::Simple;
 use Email::Simple::Creator;
-use HTML::Strip;
 use Term::ANSIColor;
 use List::MoreUtils qw(firstidx);
 
@@ -163,7 +163,7 @@ sub showEmailList {
 	# Open connection to IMAP server
 	print "Contacting server...\n";
 	my $imapServer = Net::IMAP::Simple->new('imap.gmail.com', port=>993, use_ssl=>1) || die "Unable to connect to Gmail\n";
-	$imapServer->login($accountAddress, $accountPassword) || die "Unable to login\n";
+	$imapServer->login($accountAddress, $accountPassword) or die "Unable to login\n";
 	print "\n";
 
 	my $messageCount = $imapServer->select('INBOX');
@@ -182,17 +182,6 @@ sub showEmailList {
 		$messagesToFetch += $unreadMessages;
 	}
 
-	#my @email_threads = ( );
-	#my @emails = ( );
-	#for(my $i = $messageCount; $i > $messageCount - $messagesToFetch && $i > 0; $i--){ 
-	#	my $thread = threads->new( sub { 
-	#		my $index = $i;
-	#		my $email= Email::Simple->new( join '', @{ $imapServer->get($i) } );
-	#		@emails[$index] = $email;
-	#	});
-	#	push(@email_threads, $thread);
-	#}
-
 	# Iterate through messages
 	for(my $i = $messageCount; $i > $messageCount - $messagesToFetch && $i > 0; $i--){ 
 		my $unread = 1;
@@ -201,11 +190,9 @@ sub showEmailList {
 			$unread = 0;
 		}
 
-		my $email= Email::Simple->new( join '', @{ $imapServer->get($i) } );
+		my $email= Email::MIME->new( join '', @{ $imapServer->get($i) } );
 
-		my $htmlStripper = HTML::Strip->new();
-
-		my $emailBody = $htmlStripper->parse( $email->body );
+		my $emailBody = $email->body;
 
 		if($unread) {
 			$inboxText = $inboxText . "* ";
@@ -269,6 +256,13 @@ sub composeEmail( ) {
 	my @accounts = Kaiser::Accounts::get_accounts();
 	my $accountSelection = Kaiser::Accounts::pick_account();
 
+    # Try to login before allowing the email to be composed
+	my $accountAddress = $accounts[$accountSelection]{'address'};
+	my $accountPassword = $accounts[$accountSelection]{'password'};
+	print "Contacting server...\n";
+	my $imapServer = Net::IMAP::Simple->new('imap.gmail.com', port=>993, use_ssl=>1) || die "Unable to connect to Gmail\n";
+	$imapServer->login($accountAddress, $accountPassword) or die "Unable to login\n";
+
 	my $senderAddress = $accounts[$accountSelection]{'address'};
 	my $senderPassword = $accounts[$accountSelection]{'password'};
 
@@ -288,7 +282,6 @@ sub composeEmail( ) {
 	while (my $line = <$data>) {
 	       $emailBody = "${emailBody}\n${line}";
 	}
-
 
 	### Ask what to do
 	print "\n";
