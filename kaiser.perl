@@ -164,7 +164,6 @@ sub showEmailList {
 	print "Contacting server...\n";
 	my $imapServer = Net::IMAP::Simple->new('imap.gmail.com', port=>993, use_ssl=>1) || die "Unable to connect to Gmail\n";
 	$imapServer->login($accountAddress, $accountPassword) or die "Unable to login\n";
-	print "\n";
 
 	my $messageCount = $imapServer->select('INBOX');
 
@@ -193,7 +192,9 @@ sub showEmailList {
 
 		my $email= Email::MIME->new( join '', @{ $imapServer->get($i) } );
 
+		my $emailBody = "";
         my @attachments;
+
         $email->walk_parts(sub {
             my ($part) = @_;
 
@@ -206,9 +207,11 @@ sub showEmailList {
                 my $filename = $part->filename();
                 push @attachments, $filename;
             }
+            if ($part->content_type =~ m[text/plain]i)  {
+                $emailBody .= $part->body_str . "\n";
+            }
         });
 
-		my $emailBody = $email->body;
 
 		if($unread) {
 			$inboxText = $inboxText . "* ";
